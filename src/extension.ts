@@ -5,12 +5,16 @@ import {
   Uri,
   workspace,
 } from "vscode";
+import { Logger, Debug } from './logger';
 import showPreview from "./commands/showPreview";
 import { JQProvider } from "./JQProvider";
 
 export function activate({ subscriptions }: ExtensionContext) {
   const queries = new WeakMap<Uri, string>();
   const histories = new WeakMap<Uri, QuickPickItem[]>();
+  Logger.appendLine("activate(): histories loaded");
+  const strHist = JSON.stringify(histories);
+  Logger.appendLine("activate(): histories:\n" + strHist);
 
   // register a content provider for the jq-scheme
   const myScheme = "jq";
@@ -21,13 +25,17 @@ export function activate({ subscriptions }: ExtensionContext) {
 
   // register a command that opens a jq-document
   subscriptions.push(
-    commands.registerCommand("jq.showPreview", showPreview(queries, histories))
+    commands.registerCommand("jq.showPreview", showPreview(queries, histories)),
   );
 
   workspace.onDidSaveTextDocument((document) => {
-    // only execute command on known documents
-    if (!queries.has(document.uri)) return;
-    commands.executeCommand("jq.showPreview", document.uri);
+    const config = workspace.getConfiguration("jq");
+    const { queryOnSave = false, outputNewDocument = true } = config;
+    if(queryOnSave) {
+        // only execute command on known documents
+        if (!queries.has(document.uri)) return;
+        commands.executeCommand("jq.showPreview", document.uri);
+    }
   });
   workspace.onDidCloseTextDocument((document) => {
     queries.delete(document.uri);

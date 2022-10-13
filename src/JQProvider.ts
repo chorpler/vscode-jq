@@ -1,4 +1,4 @@
-import { EventEmitter, TextDocumentContentProvider, Uri } from "vscode";
+import { EventEmitter, QuickPickItem, QuickPickItemButtonEvent, TextDocumentContentProvider, Uri } from "vscode";
 
 export class JQProvider implements TextDocumentContentProvider {
   // emitter and its event
@@ -9,3 +9,5 @@ export class JQProvider implements TextDocumentContentProvider {
     return uri.query;
   }
 }
+
+// export class JQButtonProvider implements Provider<Quick
