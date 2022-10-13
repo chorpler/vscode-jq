@@ -35,6 +35,16 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "By default, this extension only works with files with a `json` file identifier. Turn this off if you want to use it everywhere."
+        },
+        "jq.queryOnSave": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Turn this on if you want to automatically re-run your jq query when you save a JSON file you've queried already."
+        },
+        "jq.outputNewDocument": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "If this is enabled, the output will be in a new split-screen document. If not, output will be shown in the jq Output pane."
         }
       }
     },
@@ -67,6 +77,7 @@
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
+    "@types/node": "^12.20.55",
     "@types/vscode": "^1.47.0",
     "prettier": "^1.19.1",
     "tslint": "^6.1.2",
