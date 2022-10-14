@@ -26,10 +26,25 @@
     "configuration": {
       "title": "jq Live View",
       "properties": {
+        "jq.customParameters": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Add custom jq parameters here, like -c for compact mode."
+        },
         "jq.customCommand": {
           "type": "string",
           "default": "jq '$$user_filter' '$$file_path'",
           "markdownDescription": "Custom command that supports jq command line options.\n\n `$$user_filter` is replaced with the filter you typed\n\n `$$file_path` is replaced with the current file path"
+        },
+        "jq.customRawDataCommand2": {
+          "type": "string",
+          "default": "printf \"%s\\n\" $$json_data | jq '$$user_filter'",
+          "markdownDescription": "Custom jq command when processing raw JSON data, not a saved file.\n\n `$$user_filter` is replaced with the filter you typed\n\n `$$json_data` is replaced with the current JSON data."
+        },
+        "jq.customRawDataCommand": {
+          "type": "string",
+          "default": "export JQJSONDATA4=$$json_data && echo \"${JQJSONDATA4}\" | jq '$$user_filter'",
+          "markdownDescription": "Custom jq command when processing raw JSON data, not a saved file.\n\n `$$user_filter` is replaced with the filter you typed\n\n `$$json_data` is replaced with the current JSON data."
         },
         "jq.strictMode": {
           "type": "boolean",
