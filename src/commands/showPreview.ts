@@ -135,9 +135,17 @@ const showPreview = (
     let isNew = window.activeTextEditor?.document?.isUntitled;
     let query;
     if(isNew) {
+      Debug.appendLine(`Is fresh new unspoiled UNTITLED-n file!`);
       let jsonData = window.activeTextEditor.document.getText();
-      query = await spawnJqUnsaved(jqCommand, jsonData, config);
+      // let strJsonData = jsonData;
+      // let strJsonData = typeof jsonData !== 'string' ? JSON.stringify(jsonData) : jsonData;
+      let strJsonData = JSON.stringify(jsonData);
+      Debug.appendLine(`command will be:\n` + jqCommand);
+      Debug.appendLine(`Sending json data:\n` + jsonData);
+      Debug.appendLine(`Sending json string data:\n` + strJsonData);
+      query = await spawnJqUnsaved(jqCommand, strJsonData, config);
     } else {
+      Debug.appendLine(`Showing in output pane`);
       query = await spawnJq(jqCommand, fileName, config);
     }
     if(query) {

@@ -18,8 +18,9 @@ export async function spawnJqUnsaved(
   // VSCode extensions currently do not support variable resolution in settings
   // https://github.com/microsoft/vscode/issues/2809
   // to work around it, we use well-defined variables starting with $$ that we replace here
-  const { customCommand = `jq '$$user_filter' <$$json_data` } = config;
-  const parsedCommand = customCommand
+  const { customRawDataCommand = `echo "$$json_data" | jq '$$user_filter'` } = config;
+  // if(!customCommand.contains('<$$json_data')){}
+  const parsedCommand = customRawDataCommand
     .replace("$$user_filter", userFilter)
     .replace("$$json_data", jsonData);
   const { stdout } = await wrappedSpawn(parsedCommand);
