@@ -1,23 +1,34 @@
-import { QuickPickItem, QuickPickItemKind             } from "vscode";
-import { QuickPickItemButtonEvent  } from "vscode";
-import { WorkspaceConfiguration    } from "vscode";
-import { QuickInputButton          } from "vscode";
-import { QuickPick                 } from "vscode";
-import { QuickInputButtons         } from "vscode";
-import { ExtensionContext          } from "vscode";
-import { ThemeIcon                 } from "vscode";
-import { ThemeColor                } from "vscode";
-import { Uri                       } from "vscode";
-import { ViewColumn                } from "vscode";
-import { window                    } from "vscode";
-import { workspace                 } from "vscode";
-import * as vscode from "vscode";
-import { spawnJq, spawnJqUnsaved, stringifyCommand } from "../jq" ;
-import { Logger, Debug             } from '../logger';
-import { renderOutput, renderError, RenderOutputType } from '../renderer';
+import * as vscode from 'vscode'                      ;
+import { QuickPickItem            } from 'vscode'     ;
+import { QuickPickItemKind        } from 'vscode'     ;
+import { ConfigurationTarget      } from 'vscode'     ;
+import { QuickPickItemButtonEvent } from 'vscode'     ;
+import { WorkspaceConfiguration   } from 'vscode'     ;
+import { QuickInputButton         } from 'vscode'     ;
+import { QuickPick                } from 'vscode'     ;
+import { QuickInputButtons        } from 'vscode'     ;
+import { ExtensionContext         } from 'vscode'     ;
+import { ThemeIcon                } from 'vscode'     ;
+import { ThemeColor               } from 'vscode'     ;
+import { Uri                      } from 'vscode'     ;
+import { ViewColumn               } from 'vscode'     ;
+import { Logger                   } from '../logger'  ;
+import { Debug                    } from '../logger'  ;
+import { RenderOutputType         } from '../renderer';
+import { window                   } from 'vscode'     ;
+import { workspace                } from 'vscode'     ;
+import { spawnJq                  } from '../jq'      ;
+import { spawnJqUnsaved           } from '../jq'      ;
+import { stringifyCommand         } from '../jq'      ;
+import { renderOutput             } from '../renderer';
+import { renderError              } from '../renderer';
+
 
 var config:WorkspaceConfiguration;
 var input:QuickPick<QuickPickItem>;
+var globals:QuickPickItem[];
+var locals:QuickPickItem[];
+var cfgGlobal:any;
 
 const color1 = new ThemeColor('input.foreground');
 const color2 = new ThemeColor('button.foreground');
@@ -25,12 +36,13 @@ const buttons:ButtonList = {
   filter: {
     on: { iconPath: new ThemeIcon("filter-filled", color2), tooltip: `Filter mode active`, },
     off: { iconPath: new ThemeIcon("filter", color2), tooltip: `Filter mode inactive`, },
-  },  
+  },
   newdoc: {
     on: { iconPath: new ThemeIcon("file-code", color2), tooltip: `Show results in new document`, },
     off: { iconPath: new ThemeIcon("terminal", color2), tooltip: `Show results in Output panel`, },
-  },  
-};  
+  },
+};
+
 
 const createCloseButton = function(val:string):QuickInputButton {
   let btn:QuickInputButton = {
@@ -197,14 +209,17 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           /* Is global save button */
           Logger.appendLine("GlobalSave button clicked for item:" + itemlbl);
           input.value = item.label;
+          let cfgKey = "globalFormulas";
           let cfgJq = workspace.getConfiguration("jq");
-          let cfg1 = cfgJq.globalFormulas;
+          let cfg1 = cfgJq[cfgKey];
+          cfgGlobal = {...cfg1};
           let cfg2 = cfgJq.savedDocumentFormulas;
           // let cfg2 = workspace.getConfiguration("jq.savedDocumentFormulas");
           let strCfg1 = JSON.stringify(cfg1);
           let strCfg2 = JSON.stringify(cfg2);
           Logger.appendLine("Global saved queries:\n" + strCfg1);
           Logger.appendLine("Document saved queries:\n" + strCfg2);
+          cfgJq.update(cfgKey, globals, ConfigurationTarget.Global);
           // resolve(``);
         } else if(idx === 1) {
           /* Is save button */
@@ -215,8 +230,8 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           if(global) {
             /* Unsaved document, save to global list */
             cfgKey = "globalFormulas";
-            let qs:string[] = wsCfg.get(cfgKey, []);
-            workspace.getConfiguration("jq")
+            // let qs:string[] = wsCfg.get(cfgKey, []);
+            let qs:string[] = wsCfg[cfgKey] || [];
             let queries = [...qs];
             let strQs = JSON.stringify(queries);
             Logger.appendLine(`Saved global queries:\n` + strQs);
@@ -225,7 +240,7 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
             }
             strQs = JSON.stringify(queries);
             Logger.appendLine(`Updated global queries:\n` + strQs);
-            wsCfg.update(cfgKey, queries);
+            workspace.getConfiguration("jq").update(cfgKey, queries, ConfigurationTarget.Global);
           } else {
             /* Existing document, save to it only */
             let qs:any = wsCfg.get(cfgKey, {});
@@ -243,7 +258,7 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
             queries[docId] = docArray;
             strQs = JSON.stringify(queries);
             Logger.appendLine(`Updated queries:\n` + strQs);
-            wsCfg.update(cfgKey, queries);
+            wsCfg.update(cfgKey, queries, ConfigurationTarget.Global);
           }
 
           // input.items = input.items.filter(item => item !== evt.item);
@@ -286,7 +301,7 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           } else {
             input.buttons = [ buttons.newdoc.off, input.buttons[1] ];
           }
-          config.update("jq", "outputNewDocument", out);
+          config.update("jq.outputNewDocument", out, ConfigurationTarget.Global);
           states.outputDocument = out;
         }
       });
