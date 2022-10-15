@@ -28,7 +28,7 @@ var config:WorkspaceConfiguration;
 var input:QuickPick<QuickPickItem>;
 var globals:QuickPickItem[];
 var locals:QuickPickItem[];
-var cfgGlobal:any;
+var cfgGlobal:string[];
 
 const color1 = new ThemeColor('input.foreground');
 const color2 = new ThemeColor('button.foreground');
@@ -112,7 +112,8 @@ const generateItems = (items:string[]=initialChoices):QuickPickItem[] => {
     label: "Global",
     kind: QuickPickItemKind.Separator,
   };
-  let gLabels = (config.get("globalFormulas") as string[]);
+  // let gLabels = (config.get("globalFormulas") as string[]);
+  let gLabels = cfgGlobal;
   let globals:QuickPickItem[] = gLabels.map(label => {
     let newItem:QuickPickItem = {
       label: label,
@@ -211,15 +212,19 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           input.value = item.label;
           let cfgKey = "globalFormulas";
           let cfgJq = workspace.getConfiguration("jq");
-          let cfg1 = cfgJq[cfgKey];
-          cfgGlobal = {...cfg1};
+          let cfg1:string[] = cfgJq[cfgKey];
+          if(cfg1.indexOf(itemlbl) === -1) {
+            cfg1.unshift(itemlbl);
+          }
+          cfgGlobal = [...cfg1];
           let cfg2 = cfgJq.savedDocumentFormulas;
           // let cfg2 = workspace.getConfiguration("jq.savedDocumentFormulas");
           let strCfg1 = JSON.stringify(cfg1);
           let strCfg2 = JSON.stringify(cfg2);
           Logger.appendLine("Global saved queries:\n" + strCfg1);
           Logger.appendLine("Document saved queries:\n" + strCfg2);
-          cfgJq.update(cfgKey, globals, ConfigurationTarget.Global);
+          // cfgJq.update(cfgKey, globals, ConfigurationTarget.Global);
+          cfgJq.update(cfgKey, cfgGlobal, ConfigurationTarget.Global);
           // resolve(``);
         } else if(idx === 1) {
           /* Is save button */
@@ -359,8 +364,9 @@ const showPreview = (
   config = workspace.getConfiguration("jq");
   let cfgStr = JSON.stringify(config);
   Logger.appendLine("JQ config:\n" + cfgStr);
-  const { strictMode=false, queryOnSave=false, outputNewDocument=false, validLanguageIdentifiers = [] } = config;
+  const { strictMode=false, queryOnSave=false, globalFormulas=[], outputNewDocument=false, validLanguageIdentifiers = [] } = config;
   states.outputDocument = outputNewDocument;
+  cfgGlobal = globalFormulas;
   Logger.appendLine("showPreview() is running now");
 
   setContext(true);
