@@ -1,22 +1,27 @@
 {
-  "name": "jq-preview",
-  "displayName": "jq Live View",
-  "description": "A sample JQ for virtual document",
+  "name": "jq-queryview",
+  "displayName": "JQ Query View",
+  "description": "Run JQ queries on JSON documents",
   "icon": "icon.png",
-  "version": "0.4.2",
-  "publisher": "ldd-vs-code",
+  "version": "1.0.0",
+  "publisher": "starmobiledevelopers",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ldd/vscode-jq"
+    "url": "https://github.com/chorpler/vscode-jq"
   },
   "bugs": {
-    "url": "https://github.com/ldd/vscode-jq/issues"
+    "url": "https://github.com/chorpler/vscode-jq/issues"
   },
   "engines": {
     "vscode": "^1.47.0"
   },
   "categories": [
+    "Programming Languages",
     "Other"
+  ],
+  "extensionKind": [
+    "ui",
+    "workspace"
   ],
   "activationEvents": [
     "onCommand:jq.showPreview"
@@ -24,7 +29,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "jq Live View",
+      "title": "JQ Query View",
       "properties": {
         "jq.shell": {
           "type": "string",
@@ -111,6 +116,10 @@
       {
         "command": "jq.showPreview",
         "title": "jq"
+      },
+      {
+        "command": "jq.tabNext",
+        "title": "jq tabNext"
       }
     ],
     "keybindings": [
@@ -145,6 +154,7 @@
       ],
       "commandPalette": [
         {
+          "group": "JQ",
           "command": "jq.showPreview",
           "when": "resourceScheme != jq && !config.jq.strictMode || resourceScheme != jq && resourceLangId == json"
         }
