@@ -6,7 +6,8 @@ import {
   workspace,
 } from "vscode";
 import { Logger, Debug } from './logger';
-import showPreview from "./commands/showPreview";
+import { showPreview } from "./commands/showPreview";
+import { tabNext } from "./commands/showPreview";
 import { JQProvider } from "./JQProvider";
 
 export function activate({ subscriptions }: ExtensionContext) {
@@ -26,6 +27,7 @@ export function activate({ subscriptions }: ExtensionContext) {
   // register a command that opens a jq-document
   subscriptions.push(
     commands.registerCommand("jq.showPreview", showPreview(queries, histories)),
+    commands.registerCommand("jq.tabNext", tabNext(queries, histories)),
   );
 
   workspace.onDidSaveTextDocument((document) => {

@@ -12,14 +12,14 @@ export const renderOutput = (type: RenderOutputType) => (data: string) => {
         vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside),
       );
   } else {
-    Logger.clear();
+    // Logger.clear();
     Logger.append(data);
     Logger.show(true);
   }
 };
 
 export const renderError = (data: string) => {
-  Logger.clear();
+  // Logger.clear();
   Logger.append(data);
   Logger.show(true);
   return vscode.window.showErrorMessage(data);

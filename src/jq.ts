@@ -1,10 +1,17 @@
-import { exec } from "child_process";
+import { exec, ExecOptions, PromiseWithChild } from "child_process";
 import { promisify } from "util";
 import { WorkspaceConfiguration } from "vscode";
 import { window } from "vscode";
 import { workspace } from "vscode";
+import { Logger, Debug } from "./logger";
 
-const wrappedSpawn = promisify(exec);
+const wrappedExec = promisify(exec);
+
+const wrappedSpawn = async (cmd:string, options?:ExecOptions) => {
+
+  let res = await wrappedExec(cmd, options);
+  return res;
+}
 
 const DEFAULT_FILE = "sample.json";
 
@@ -18,13 +25,14 @@ export async function spawnJqUnsaved(
   // VSCode extensions currently do not support variable resolution in settings
   // https://github.com/microsoft/vscode/issues/2809
   // to work around it, we use well-defined variables starting with $$ that we replace here
-  const { customRawDataCommand = `echo "$$json_data" | jq '$$user_filter'` } = config;
+  const { shell = '/bin/bash', customRawDataCommand = `jq '$$user_filter' <(echo -e $$json_data)` } = config;
   // if(!customCommand.contains('<$$json_data')){}
   const parsedCommand = customRawDataCommand
     .replace("$$user_filter", userFilter)
     .replace("$$json_data", jsonData);
-  const { stdout } = await wrappedSpawn(parsedCommand);
-  return stdout;
+  Debug.appendLine(`Command will be:\n` + shell + '\n' + parsedCommand);
+  const { stdout } = await wrappedSpawn(parsedCommand, { shell: shell });
+  return String(stdout);
 }
 
 export async function spawnJq(
@@ -41,7 +49,7 @@ export async function spawnJq(
     .replace("$$user_filter", userFilter)
     .replace("$$file_path", filePath);
   const { stdout } = await wrappedSpawn(parsedCommand);
-  return stdout;
+  return String(stdout);
 }
 
 export function stringifyCommand(command: string = "") {
