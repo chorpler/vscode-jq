@@ -26,6 +26,11 @@
     "configuration": {
       "title": "jq Live View",
       "properties": {
+        "jq.shell": {
+          "type": "string",
+          "default": "/bin/bash",
+          "markdownDescription": "Path to the shell to use when running jq"
+        },
         "jq.customParameters": {
           "type": "string",
           "default": "",
@@ -36,14 +41,25 @@
           "default": "jq '$$user_filter' '$$file_path'",
           "markdownDescription": "Custom command that supports jq command line options.\n\n `$$user_filter` is replaced with the filter you typed\n\n `$$file_path` is replaced with the current file path"
         },
-        "jq.customRawDataCommand2": {
+        "jq.customCommandRaw": {
           "type": "string",
-          "default": "printf \"%s\\n\" $$json_data | jq '$$user_filter'",
+          "default": "jq '$$user_filter' <(echo -e $$json_data)",
           "markdownDescription": "Custom jq command when processing raw JSON data, not a saved file.\n\n `$$user_filter` is replaced with the filter you typed\n\n `$$json_data` is replaced with the current JSON data."
         },
-        "jq.customRawDataCommand": {
-          "type": "string",
-          "default": "export JQJSONDATA4=$$json_data && echo \"${JQJSONDATA4}\" | jq '$$user_filter'",
+        "jq.customRawDataCommand2": {
+          "type": "array",
+          "contains": {
+            "type": "string"
+          },
+          "uniqueItem": false,
+          "items": {
+            "type": "string",
+            "title": "JQ query string"
+          },
+          "default": [
+            "printf \"%s\\n\" $$json_data | jq '$$user_filter'",
+            "export JQJSONDATA4=$$json_data && echo \"${JQJSONDATA4}\" | jq '$$user_filter'"
+          ],
           "markdownDescription": "Custom jq command when processing raw JSON data, not a saved file.\n\n `$$user_filter` is replaced with the filter you typed\n\n `$$json_data` is replaced with the current JSON data."
         },
         "jq.strictMode": {
@@ -60,6 +76,34 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "If this is enabled, the output will be in a new split-screen document. If not, output will be shown in the jq Output pane."
+        },
+        "jq.globalFormulas": {
+          "type": "array",
+          "contains": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "title": "JQ query string"
+          },
+          "default": [],
+          "markdownDescription": "A list of JQ queries that should show up by default for all documents"
+        },
+        "jq.savedDocumentFormulas": {
+          "type": "object",
+          "contains": {
+            "type": "array",
+            "contains": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "patternProperties": {
+            "^.*$": { "type": "array", "contains": {"type":"string"},"uniqueItems": true}
+          },
+          "default": {},
+          "markdownDescription": "Set of document IDs and associated arrays of saved JQ queries"
         }
       }
     },
@@ -67,6 +111,28 @@
       {
         "command": "jq.showPreview",
         "title": "jq"
+      }
+    ],
+    "keybindings": [
+      {
+          "key": "ctrl+k j",
+          "command": "jq.runJq",
+          "when": "inJqPreview"
+      },
+      {
+          "key": "enter",
+          "command": "jq.runJq",
+          "when": "inJqPreview"
+      },
+      {
+          "key": "tab",
+          "command": "jq.tabNext",
+          "when": "inJqPreview"
+      },
+      {
+          "key": "shift+tab",
+          "command": "jq.tabPrev",
+          "when": "inJqPreview"
       }
     ],
     "menus": {
