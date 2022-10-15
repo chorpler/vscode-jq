@@ -1,0 +1,17 @@
+{
+  "jq": {
+    "shell": "/bin/bash",
+    "customParameters": "",
+    "customCommand": "jq '$$user_filter' '$$file_path'",
+    "customCommandRaw": "jq '$$user_filter' <(echo -e $$json_data)",
+    "customRawDataCommand2": [
+      "printf \"%s\\n\" $$json_data | jq '$$user_filter'",
+      "export JQJSONDATA4=$$json_data && echo \"${JQJSONDATA4}\" | jq '$$user_filter'"
+    ],
+    "strictMode": true,
+    "queryOnSave": false,
+    "outputNewDocument": true,
+    "globalFormulas": [],
+    "savedDocumentFormulas": {}
+  }
+}
