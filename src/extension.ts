@@ -13,9 +13,9 @@ import { JQProvider } from "./JQProvider";
 export function activate({ subscriptions }: ExtensionContext) {
   const queries = new WeakMap<Uri, string>();
   const histories = new WeakMap<Uri, QuickPickItem[]>();
-  Logger.appendLine("activate(): histories loaded");
+  Debug.appendLine("activate(): histories loaded");
   const strHist = JSON.stringify(histories);
-  Logger.appendLine("activate(): histories:\n" + strHist);
+  Debug.appendLine("activate(): histories:\n" + strHist);
 
   // register a content provider for the jq-scheme
   const myScheme = "jq";

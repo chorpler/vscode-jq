@@ -158,7 +158,7 @@ const setContext = (state: boolean) => {
 
 async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
   try {
-    Logger.appendLine("pickFilter() is currently running brah");
+    Debug.appendLine("pickFilter() is currently running brah");
     return await new Promise<string>((resolve, reject) => {
       input = window.createQuickPick<QuickPickItem>();
       let outputNewDocument = states.outputDocument;
@@ -185,18 +185,18 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
       });
       input.onDidChangeActive((items:readonly QuickPickItem[]) => {
         let item:QuickPickItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
-        // Logger.appendLine("Active item changed");
+        // Debug.appendLine("Active item changed");
         if(item != null) {
           let txt = item.label;
-          Logger.appendLine("Active item now: " + txt);
+          Debug.appendLine("Active item now: " + txt);
         }
       });
       input.onDidChangeSelection((items:readonly QuickPickItem[]) => {
         let item:QuickPickItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
-        // Logger.appendLine("Selection changed");
+        // Debug.appendLine("Selection changed");
         if(item != null) {
           let txt = item.label;
-          Logger.appendLine("Selection is now: " + txt);
+          Debug.appendLine("Selection is now: " + txt);
           // input.value = item.label;
         }
       });
@@ -208,7 +208,9 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
         let itemlbl = evt && evt.item && evt.item.label ? evt.item.label : "unknown_item";
         if(idx === 0) {
           /* Is global save button */
-          Logger.appendLine("GlobalSave button clicked for item:" + itemlbl);
+          let msgtext = `Query '${itemlbl}' saved globally`;
+          vscode.window.setStatusBarMessage(msgtext, 2000);
+          Debug.appendLine("GlobalSave button clicked for item:" + itemlbl);
           input.value = item.label;
           let cfgKey = "globalFormulas";
           let cfgJq = workspace.getConfiguration("jq");
@@ -221,14 +223,16 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           // let cfg2 = workspace.getConfiguration("jq.savedDocumentFormulas");
           let strCfg1 = JSON.stringify(cfg1);
           let strCfg2 = JSON.stringify(cfg2);
-          Logger.appendLine("Global saved queries:\n" + strCfg1);
-          Logger.appendLine("Document saved queries:\n" + strCfg2);
+          Debug.appendLine("Global saved queries:\n" + strCfg1);
+          Debug.appendLine("Document saved queries:\n" + strCfg2);
           // cfgJq.update(cfgKey, globals, ConfigurationTarget.Global);
           cfgJq.update(cfgKey, cfgGlobal, ConfigurationTarget.Global);
           // resolve(``);
         } else if(idx === 1) {
           /* Is save button */
-          Logger.appendLine("Save button clicked for item: " + itemlbl);
+          let msgtext = `Query '${itemlbl}' saved for document`;
+          vscode.window.setStatusBarMessage(msgtext, 2000);
+          Debug.appendLine("Save button clicked for item: " + itemlbl);
           let cfgKey = "savedDocumentFormulas";
           let global = window.activeTextEditor?.document?.isUntitled;
           let wsCfg = workspace.getConfiguration("jq");
@@ -239,22 +243,22 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
             let qs:string[] = wsCfg[cfgKey] || [];
             let queries = [...qs];
             let strQs = JSON.stringify(queries);
-            Logger.appendLine(`Saved global queries:\n` + strQs);
+            Debug.appendLine(`Saved global queries:\n` + strQs);
             if(queries.indexOf(itemlbl) === -1) {
               queries.unshift(itemlbl);
             }
             strQs = JSON.stringify(queries);
-            Logger.appendLine(`Updated global queries:\n` + strQs);
+            Debug.appendLine(`Updated global queries:\n` + strQs);
             workspace.getConfiguration("jq").update(cfgKey, queries, ConfigurationTarget.Global);
           } else {
             /* Existing document, save to it only */
             let qs:any = wsCfg.get(cfgKey, {});
             let queries = Object.assign({}, qs);
             let strQs = JSON.stringify(queries);
-            Logger.appendLine(`Saved queries:\n` + strQs);
+            Debug.appendLine(`Saved queries:\n` + strQs);
   
             let strHist = JSON.stringify(histories);
-            Logger.appendLine(`Histories is:\n` + strHist);
+            Debug.appendLine(`Histories is:\n` + strHist);
             let docId = uri.fsPath;
             let docArray = queries && Array.isArray(queries[docId]) ? queries[docId] : [];
             if(docArray.indexOf(itemlbl) === -1) {
@@ -262,7 +266,7 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
             }
             queries[docId] = docArray;
             strQs = JSON.stringify(queries);
-            Logger.appendLine(`Updated queries:\n` + strQs);
+            Debug.appendLine(`Updated queries:\n` + strQs);
             wsCfg.update(cfgKey, queries, ConfigurationTarget.Global);
           }
 
@@ -272,13 +276,16 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           // resolve(`Deleted item '${itemlbl}'`);
         } else if(idx === 2) {
           /* Is close button */
-          Logger.appendLine("Close button clicked for item: " + itemlbl);
+          Debug.appendLine("Close button clicked for item: " + itemlbl);
           input.items = input.items.filter(item => item !== evt.item);
           const newHistory = [...input.items];
           histories.set(uri, newHistory);
+          let msgtext = `Removing JQ query '${itemlbl}'`;
+          vscode.window.setStatusBarMessage(msgtext, 2000);
           // resolve(`Deleted item '${itemlbl}'`);
         } else {
-          Logger.appendLine("WARNING: Can't detect button type");
+          // vscode.window.showWarningMessage("Warning: Can't detect button type", {});
+          vscode.window.setStatusBarMessage("WARNING: Can't detect button type", 3000);
         }
       });
 
@@ -286,7 +293,9 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
         if(evt === buttons.filter.on || evt === buttons.filter.off) {
           let state = states.filterMode;
           let out = !state;
-          Logger.appendLine("Filter button triggered, will be set to:" + out);
+          let msgtext = out === true ? `Filter mode: ENABLED` : `Filter mode: DISABLED`;
+          vscode.window.setStatusBarMessage(msgtext, 2000);
+          Debug.appendLine("Filter button triggered, will be set to:" + out);
           if(out) {
             input.buttons = [ input.buttons[0], buttons.filter.on ];
           } else {
@@ -300,7 +309,9 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           let state = states.outputDocument;
           let out = !state;
           let desc = out === true ? "document" : "output";
-          Logger.appendLine("Output button triggered, output type is now:" + desc);
+          let msgtext = `Setting JQ output type to '${desc}'`;
+          vscode.window.setStatusBarMessage(msgtext, 2000);
+          Debug.appendLine("Output button triggered, output type is now:" + desc);
           if(out) {
             input.buttons = [ buttons.newdoc.on, input.buttons[1] ];
           } else {
@@ -320,8 +331,8 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
         if(val === "") {
           val = input.activeItems && input.activeItems.length > 0 ? input.activeItems[0].label : val;
         }
-        Logger.appendLine(`Accepted, selected items:\n` + strSel);
-        Logger.appendLine("Accepted with input:\n" + val);
+        Debug.appendLine(`Accepted, selected items:\n` + strSel);
+        Debug.appendLine("Accepted with input:\n" + val);
         const tmpHistory = [...input.items];
         let newHistoryLabels = tmpHistory.map(item => item.label);
         if(selectedItems.length < 1) {
@@ -335,11 +346,11 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
         histories.set(uri, newHistory);
         let jqCmd = val;
         if(jqCmd === "") {
-          Logger.appendLine("Empty JQ string, user canceled.");
+          Debug.appendLine("Empty JQ string, user canceled.");
           reject("No JQ command provided");
           input.dispose();
         }
-        Logger.appendLine("Value accepted: " + jqCmd);
+        Debug.appendLine("Value accepted: " + jqCmd);
         // if(selectedItems[0]?.label !== input.value) {}
         // resolve(selectedItems[0]?.label ?? label);
         resolve(jqCmd);
@@ -363,11 +374,11 @@ const showPreview = (
   
   config = workspace.getConfiguration("jq");
   let cfgStr = JSON.stringify(config);
-  Logger.appendLine("JQ config:\n" + cfgStr);
+  Debug.appendLine("JQ config:\n" + cfgStr);
   const { strictMode=false, queryOnSave=false, globalFormulas=[], outputNewDocument=false, validLanguageIdentifiers = [] } = config;
   states.outputDocument = outputNewDocument;
   cfgGlobal = globalFormulas;
-  Logger.appendLine("showPreview() is running now");
+  Debug.appendLine("showPreview() is running now");
 
   setContext(true);
   // strict mode requires our document languageId to be part of validLanguageIdentifiers
@@ -442,7 +453,7 @@ const tabNext = (
   queries: WeakMap<Uri, string>,
   histories: WeakMap<Uri, QuickPickItem[]>
 ) => async (uri: Uri) => {
-  Logger.appendLine("Tab received!");
+  Debug.appendLine("Tab received!");
   if(input) {
     let active:QuickPickItem = Array.isArray(input.activeItems) && input.activeItems.length > 0 ? input.activeItems[0] : null;
     if(active !== null) {
