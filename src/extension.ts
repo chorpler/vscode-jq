@@ -35,7 +35,9 @@ export function activate({ subscriptions }: ExtensionContext) {
     const { queryOnSave = false, outputNewDocument = true } = config;
     if(queryOnSave) {
         // only execute command on known documents
-        if (!queries.has(document.uri)) return;
+        if (!queries.has(document.uri)) {
+          return;
+        }
         commands.executeCommand("jq.showPreview", document.uri);
     }
   });
