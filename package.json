@@ -1,9 +1,9 @@
 {
   "name": "jq-queryview",
   "displayName": "JQ Query View",
-  "description": "Run JQ queries on JSON documents",
+  "description": "Run JQ queries on JSON documents in VS Code",
   "icon": "icon.png",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "starmobiledevelopers",
   "repository": {
     "type": "git",
@@ -176,11 +176,14 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "lint": "tslint -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/node": "^12.20.55",
-    "@types/vscode": "^1.47.0",
+    "@types/node": "^20.12.7",
+    "@types/vscode": "^1.88.0",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.3.9",
     "prettier": "^1.19.1",
     "tslint": "^6.1.2",
     "tslint-config-prettier": "^1.18.0",
