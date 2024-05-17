@@ -100,7 +100,8 @@ const generateItems = (items:string[]=initialChoices):QuickPickItem[] => {
         createCloseButton(label),
       ],
       picked: false,
-      alwaysShow:!states.filterMode,
+      // alwaysShow:!states.filterMode,
+      alwaysShow:true,
     };
     return newItem;
   });
@@ -124,7 +125,8 @@ const generateItems = (items:string[]=initialChoices):QuickPickItem[] => {
         createCloseButton(label),
       ],
       picked: false,
-      alwaysShow:!states.filterMode,
+      // alwaysShow:!states.filterMode,
+      alwaysShow:true,
     };
     return newItem;
   });
@@ -142,25 +144,29 @@ const generateItems = (items:string[]=initialChoices):QuickPickItem[] => {
 };
 
 // class MyButton implements QuickInputButton {
-//   constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }  
+//   constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
 // }
 
 // const createResourceGroupButton = new MyButton({
-//   dark: Uri.file(new ThemeIcon('close')),  
+//   dark: Uri.file(new ThemeIcon('close')),
 //   light: Uri.file(context.asAbsolutePath('resources/light/add.svg')),
 // }, 'Create Resource Group');
 
 // let itemcon = window.createOutputChannel("ItemPicked");
 const setContext = (state: boolean) => {
   vscode.commands.executeCommand("setContext", "inJqPreview", state);
-}  
+}
 
 
 async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
   try {
     Debug.appendLine("pickFilter() is currently running brah");
-    return await new Promise<string>((resolve, reject) => {
+    let valueChanging = false;
+    return new Promise<string>((resolve, reject) => {
       input = window.createQuickPick<QuickPickItem>();
+      input.keepScrollPosition = true;
+      input.ignoreFocusOut = true;
+      input.title = "jq query to run"
       let outputNewDocument = states.outputDocument;
       let btndoc = outputNewDocument === true ? buttons.newdoc.on : buttons.newdoc.off;
       let btnfil = states.filterMode === true ? buttons.filter.on : buttons.filter.off;
@@ -180,16 +186,65 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
         setContext(false);
       });
       let label = "";
+      let valueChanged = false;
+      let prevValue = "";
+      let preventValueChange = true;
       input.onDidChangeValue((newText:string) => {
+        Debug.appendLine(`onDidChangeValue(): Called with text: '${newText}'`);
+        valueChanging = true;
         label = newText;
+        Debug.appendLine(`Value now: '${label}'\nPrevious: ${prevValue}`);
+        input.activeItems = [];
+        if(label == "") {
+          prevValue = label;
+          valueChanging = false;
+          return;
+        }
+        let itemLabels = input.items.filter(item => !(item as any).new).map(item => item.label);
+        if(!itemLabels.includes(label)) {
+          let newLabels:string[];
+          // if(valueChanged) {
+          //   Debug.appendLine("Value already changed");
+          //   newLabels = [newText, ...itemLabels.slice(1)];
+          // } else {
+          //   Debug.appendLine("First value change");
+          // }
+          newLabels = [newText, ...itemLabels];
+          Debug.appendLine("Item labels: " + JSON.stringify(newLabels));
+          let newItems = generateItems(newLabels);
+          (newItems[0] as any).new = true;
+          input.items = newItems;
+          input.activeItems = [];
+        } else {
+          Debug.appendLine("Item labels already contains '" + label + "'");
+          let newItems = generateItems(itemLabels);
+          input.items = newItems;
+        }
+        prevValue = label;
+        valueChanging = false;
       });
       input.onDidChangeActive((items:readonly QuickPickItem[]) => {
-        let item:QuickPickItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
-        // Debug.appendLine("Active item changed");
-        if(item != null) {
-          let txt = item.label;
-          Debug.appendLine("Active item now: " + txt);
+        Debug.appendLine("onDidChangeActive(): Called with items: " + JSON.stringify(items));
+        if(!(Array.isArray(items) && items.length > 0)) {
+          Debug.appendLine(`onDidChangeActive(): Not called with any active items, aborting`);
+          return;
         }
+        // if(preventValueChange) {
+        //   Debug.appendLine("onDidChangeActive(): Preventing initial value change");
+        //   preventValueChange = false;
+        //   return;
+        // }
+        // let item:QuickPickItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
+        // if(valueChanging) {
+        //   Debug.appendLine("onDidChangeActive(): Value changing, abort");
+        //   return;
+        // }
+        // // Debug.appendLine("Active item changed");
+        // if(item != null) {
+        //   let txt = item.label;
+        //   Debug.appendLine("Active item now: " + txt);
+        //   input.value = txt;
+        // }
       });
       input.onDidChangeSelection((items:readonly QuickPickItem[]) => {
         let item:QuickPickItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
@@ -256,7 +311,7 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
             let queries = Object.assign({}, qs);
             let strQs = JSON.stringify(queries);
             Debug.appendLine(`Saved queries:\n` + strQs);
-  
+
             let strHist = JSON.stringify(histories);
             Debug.appendLine(`Histories is:\n` + strHist);
             let docId = uri.fsPath;
@@ -331,6 +386,7 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
         if(val === "") {
           val = input.activeItems && input.activeItems.length > 0 ? input.activeItems[0].label : val;
         }
+        input.items.forEach(item => delete (item as any).new);
         Debug.appendLine(`Accepted, selected items:\n` + strSel);
         Debug.appendLine("Accepted with input:\n" + val);
         const tmpHistory = [...input.items];
@@ -349,6 +405,7 @@ async function pickFilter(uri: Uri, histories: WeakMap<Uri, QuickPickItem[]>) {
           Debug.appendLine("Empty JQ string, user canceled.");
           reject("No JQ command provided");
           input.dispose();
+          return;
         }
         Debug.appendLine("Value accepted: " + jqCmd);
         // if(selectedItems[0]?.label !== input.value) {}
@@ -367,11 +424,13 @@ const showPreview = (
   queries: WeakMap<Uri, string>,
   histories: WeakMap<Uri, QuickPickItem[]>
 ) => async (uri: Uri) => {
-  if (!window.activeTextEditor) return;
-  
+  if (!window.activeTextEditor) {
+    return;
+  }
+
   const { document } = window.activeTextEditor;
   const { fileName, languageId, uri: documentUri } = document;
-  
+
   config = workspace.getConfiguration("jq");
   let cfgStr = JSON.stringify(config);
   Debug.appendLine("JQ config:\n" + cfgStr);
@@ -384,7 +443,9 @@ const showPreview = (
   // strict mode requires our document languageId to be part of validLanguageIdentifiers
   // you can technically configurate this using fileAssociations, but there may be reasons for users to bypass this check
   // see https://github.com/ldd/vscode-jq/issues/17
-  if (strictMode && languageId !== "json") return;
+  if (strictMode && languageId !== "json") {
+    return;
+  }
 
   let jqCommand: string | undefined;
   if (queries.has(uri)) {
@@ -396,7 +457,9 @@ const showPreview = (
   }
 
   // jqCommand could be undefined for a number of reasons, we exit early to avoid trouble
-  if (jqCommand === undefined) return;
+  if (jqCommand === undefined) {
+    return;
+  }
 
   let rawDataMode = false;
   // try {
@@ -453,15 +516,43 @@ const tabNext = (
   queries: WeakMap<Uri, string>,
   histories: WeakMap<Uri, QuickPickItem[]>
 ) => async (uri: Uri) => {
-  Debug.appendLine("Tab received!");
+  Debug.appendLine("Tab received, URI is: " + uri);
   if(input) {
-    let active:QuickPickItem = Array.isArray(input.activeItems) && input.activeItems.length > 0 ? input.activeItems[0] : null;
-    if(active !== null) {
-      let activeLabel = active.label;
-      if(input.value !== activeLabel) {
-        input.value = activeLabel;
-      }
+    let items = Array.isArray(input.items) && input.items.length > 0 ? input.items : [];
+    let actives = input.activeItems;
+    let selecteds = input.selectedItems;
+    let allItems = items.filter(item => item.label !== "Global").map(item => item.label);
+    let allActives = actives.map(item => item.label);
+    let allSelecteds = selecteds.map(item => item.label);
+    Debug.appendLine(`Items:\n${JSON.stringify(allItems)}`);
+    Debug.appendLine(`Actives:\n${JSON.stringify(allActives)}`);
+    Debug.appendLine(`Selecteds:\n${JSON.stringify(allSelecteds)}`);
+    let active:QuickPickItem = Array.isArray(actives) && actives.length > 0 ? actives[0] : null;
+    let selected:QuickPickItem = Array.isArray(selecteds) && selecteds.length > 0 ? selecteds[0] : null;
+    let count = Array.isArray(items) ? items.length : 0;
+    let current = input.value;
+    let matchingIdx = count > 0 ? items.findIndex(item => item.label === current) : -1;
+    Debug.appendLine(`Total items: ${count}   Current: '${current}'   MatchingIdx: ${matchingIdx}`);
+    if(matchingIdx === -1) {
+      // Current input value does not match any saved items
+      active = items[0];
+      // input.value = active.label;
+    } else {
+      let nextIdx = (matchingIdx + 1) % count;
+      active = items[nextIdx];
+      // input.value = active.label;
     }
+    if(active.label === 'Global') {
+      let nextIdx = (matchingIdx + 2) % count;
+      active = items[nextIdx];
+    }
+    input.value = active.label;
+    // if(active !== null) {
+    //   let activeLabel = active.label;
+    //   if(input.value !== activeLabel) {
+    //     input.value = activeLabel;
+    //   }
+    // }
   }
 };
 
